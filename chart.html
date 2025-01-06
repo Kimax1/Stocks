@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stock Chart</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script> <!-- Dodaj rozszerzenie chartjs-chart-financial -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -80,11 +80,8 @@
             l: parseFloat(prices[i]["3. low"]),
             c: parseFloat(prices[i]["4. close"])
           })),
-          color: {
-            up: 'rgba(0, 200, 0, 1)',
-            down: 'rgba(200, 0, 0, 1)',
-            unchanged: 'rgba(0, 123, 255, 1)'
-          }
+          borderColor: 'rgba(0, 123, 255, 1)',
+          backgroundColor: 'rgba(0, 123, 255, 0.3)',
         }]
       };
 
