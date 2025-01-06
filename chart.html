@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f9;
+    }
+    #chartContainer {
+      width: 80%;
+      max-width: 800px;
+      margin-top: 20px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stock Chart</h1>
+  <div>
+    <button id="lineChartButton">Line Chart</button>
+    <button id="candlestickChartButton">Candlestick Chart</button>
+  </div>
+  <div id="chartContainer">
+    <canvas id="stockChart"></canvas>
+  </div>
+
+  <script>
+    const apiUrl = "https://api.example.com/stock"; // Zamień na swoje API
+
+    // Pobierz dane z API
+    async function fetchData() {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      const dates = Object.keys(data["Time Series (Daily)"]).reverse();
+      const prices = dates.map(date => data["Time Series (Daily)"][date]);
+
+      // Format danych do wykresu liniowego
+      const lineData = {
+        labels: dates,
+        datasets: [{
+          label: 'Stock Price',
+          data: prices.map(p => parseFloat(p["4. close"])),
+          borderColor: 'rgba(0, 123, 255, 1)',
+          borderWidth: 2,
+          fill: false
+        }]
+      };
+
+      // Format danych do wykresu świecowego
+      const candlestickData = {
+        labels: dates,
+        datasets: [{
+          label: 'Candlestick',
+          data: dates.map((date, i) => ({
+            x: date,
+            o: parseFloat(prices[i]["1. open"]),
+            h: parseFloat(prices[i]["2. high"]),
+            l: parseFloat(prices[i]["3. low"]),
+            c: parseFloat(prices[i]["4. close"])
+          })),
+          color: {
+            up: 'rgba(0, 200, 0, 1)',
+            down: 'rgba(200, 0, 0, 1)',
+            unchanged: 'rgba(0, 123, 255, 1)'
+          }
+        }]
+      };
+
+      return { lineData, candlestickData };
+    }
+
+    // Inicjalizacja wykresu
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    let chart;
+
+    async function renderChart(type = 'line') {
+      const { lineData, candlestickData } = await fetchData();
+
+      if (chart) chart.destroy();
+
+      if (type === 'line') {
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: lineData,
+          options: {
+            responsive: true,
+            plugins: {
+              tooltip: { enabled: true },
+              legend: { display: true }
+            },
+            scales: {
+              x: { display: true },
+              y: { display: true }
+            }
+          }
+        });
+      } else if (type === 'candlestick') {
+        chart = new Chart(ctx, {
+          type: 'candlestick',
+          data: candlestickData,
+          options: {
+            responsive: true,
+            plugins: {
+              tooltip: { enabled: true },
+              legend: { display: true }
+            },
+            scales: {
+              x: { display: true },
+              y: { display: true }
+            }
+          }
+        });
+      }
+    }
+
+    // Eventy przycisków
+    document.getElementById('lineChartButton').addEventListener('click', () => renderChart('line'));
+    document.getElementById('candlestickChartButton').addEventListener('click', () => renderChart('candlestick'));
+
+    // Renderuj domyślny wykres
+    renderChart();
+  </script>
+</body>
+</html>
