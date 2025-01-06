@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chartContainer {
+            width: 80%;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chartContainer">
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('stockChart').getContext('2d');
+
+        const chartData = {
+            labels: ['2021-10-01', '2021-10-02', '2021-10-03'],
+            datasets: [{
+                label: 'Stock Price',
+                data: [100, 105, 110],
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 2,
+                fill: false
+            }]
+        };
+
+        const options = {
+            responsive: true,
+            scales: {
+                x: {
+                    display: true,
+                },
+                y: {
+                    display: true,
+                }
+            }
+        };
+
+        new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: options
+        });
+    </script>
+</body>
+</html>
