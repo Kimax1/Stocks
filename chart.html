@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stock Chart</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script> <!-- Dodaj rozszerzenie chartjs-chart-financial -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,7 +14,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: #f4f4f9;
+      background-color: #000; /* Czarny kolor tła */
+      color: #fff; /* Tekst w kolorze białym */
     }
     #chartContainer {
       width: 80%;
@@ -22,7 +23,7 @@
       margin-top: 20px;
     }
     button {
-      margin: 10px;
+      margin: 5px;
       padding: 10px 20px;
       border: none;
       background-color: #007bff;
@@ -33,106 +34,162 @@
     button:hover {
       background-color: #0056b3;
     }
+    #controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 10px 0;
+    }
+    input {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 200px;
+    }
   </style>
 </head>
 <body>
   <h1>Stock Chart</h1>
-  <div>
-    <button id="lineChartButton">Line Chart</button>
-    <button id="candlestickChartButton">Candlestick Chart</button>
+  
+  <div id="controls">
+    <input type="text" id="stockInput" placeholder="Enter stock symbol (e.g., AAPL)" />
+    <button id="searchButton">Search</button>
+    
+    <div>
+      <button data-timeframe="D">Daily</button>
+      <button data-timeframe="60">Hourly</button>
+      <button data-timeframe="240">4-Hourly</button>
+      <button data-timeframe="M">Monthly</button>
+    </div>
+    
+    <div>
+      <button id="lineChartButton">Line Chart</button>
+      <button id="candlestickChartButton">Candlestick Chart</button>
+    </div>
   </div>
+
   <div id="chartContainer">
     <canvas id="stockChart"></canvas>
   </div>
 
   <script>
-    const apiUrl = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=1GFVUDGQTQ7KAKXC"; // Zamień na swoje API
+    const apiKey = "ctu2iupr01qi2rq6atb0ctu2iupr01qi2rq6atbg";
+    let currentSymbol = "AAPL"; // Domyślny symbol
+    let currentTimeframe = "D"; // Domyślny zakres czasowy
 
-    // Pobierz dane z API
     async function fetchData() {
+      const to = Math.floor(Date.now() / 1000);
+      const from = to - 30 * 24 * 60 * 60; // Ostatnie 30 dni
+
+      const apiUrl = `https://finnhub.io/api/v1/stock/candle?symbol=${currentSymbol}&resolution=${currentTimeframe}&from=${from}&to=${to}&token=${apiKey}`;
       const response = await fetch(apiUrl);
       const data = await response.json();
 
-      const dates = Object.keys(data["Time Series (Daily)"]).reverse();
-      const prices = dates.map(date => data["Time Series (Daily)"][date]);
+      if (data.s !== "ok") {
+        throw new Error("Error fetching data from API");
+      }
 
-      // Format danych do wykresu liniowego
+      const labels = data.t.map(timestamp => new Date(timestamp * 1000).toISOString().split('T')[0]);
       const lineData = {
-        labels: dates,
+        labels: labels,
         datasets: [{
-          label: 'Stock Price',
-          data: prices.map(p => parseFloat(p["4. close"])),
+          label: `${currentSymbol} Stock Price`,
+          data: data.c,
           borderColor: 'rgba(0, 123, 255, 1)',
           borderWidth: 2,
           fill: false
         }]
       };
 
-      // Format danych do wykresu świecowego
       const candlestickData = {
-        labels: dates,
+        labels: labels,
         datasets: [{
-          label: 'Candlestick',
-          data: dates.map((date, i) => ({
-            x: date,
-            o: parseFloat(prices[i]["1. open"]),
-            h: parseFloat(prices[i]["2. high"]),
-            l: parseFloat(prices[i]["3. low"]),
-            c: parseFloat(prices[i]["4. close"])
+          label: `${currentSymbol} Candlestick`,
+          data: data.t.map((_, i) => ({
+            x: labels[i],
+            o: data.o[i],
+            h: data.h[i],
+            l: data.l[i],
+            c: data.c[i],
           })),
-          borderColor: 'rgba(0, 123, 255, 1)',
-          backgroundColor: 'rgba(0, 123, 255, 0.3)',
+          color: {
+            up: 'rgba(0, 200, 0, 1)',
+            down: 'rgba(200, 0, 0, 1)',
+            unchanged: 'rgba(0, 123, 255, 1)'
+          }
         }]
       };
 
       return { lineData, candlestickData };
     }
 
-    // Inicjalizacja wykresu
     const ctx = document.getElementById('stockChart').getContext('2d');
     let chart;
 
     async function renderChart(type = 'line') {
-      const { lineData, candlestickData } = await fetchData();
+      try {
+        const { lineData, candlestickData } = await fetchData();
 
-      if (chart) chart.destroy();
+        if (chart) chart.destroy();
 
-      if (type === 'line') {
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: lineData,
-          options: {
-            responsive: true,
-            plugins: {
-              tooltip: { enabled: true },
-              legend: { display: true }
-            },
-            scales: {
-              x: { display: true },
-              y: { display: true }
+        if (type === 'line') {
+          chart = new Chart(ctx, {
+            type: 'line',
+            data: lineData,
+            options: {
+              responsive: true,
+              plugins: {
+                tooltip: { enabled: true },
+                legend: { display: true }
+              },
+              scales: {
+                x: { display: true },
+                y: { display: true }
+              }
             }
-          }
-        });
-      } else if (type === 'candlestick') {
-        chart = new Chart(ctx, {
-          type: 'candlestick',
-          data: candlestickData,
-          options: {
-            responsive: true,
-            plugins: {
-              tooltip: { enabled: true },
-              legend: { display: true }
-            },
-            scales: {
-              x: { display: true },
-              y: { display: true }
+          });
+        } else if (type === 'candlestick') {
+          chart = new Chart(ctx, {
+            type: 'candlestick',
+            data: candlestickData,
+            options: {
+              responsive: true,
+              plugins: {
+                tooltip: { enabled: true },
+                legend: { display: true }
+              },
+              scales: {
+                x: { display: true },
+                y: { display: true }
+              }
             }
-          }
-        });
+          });
+        }
+      } catch (error) {
+        console.error(error.message);
+        alert("Error fetching data. Please try again.");
       }
     }
 
-    // Eventy przycisków
+    // Obsługa zmiany symbolu akcji
+    document.getElementById('searchButton').addEventListener('click', () => {
+      const input = document.getElementById('stockInput').value.trim();
+      if (input) {
+        currentSymbol = input.toUpperCase();
+        renderChart();
+      }
+    });
+
+    // Obsługa zmiany zakresu czasowego
+    document.querySelectorAll('[data-timeframe]').forEach(button => {
+      button.addEventListener('click', () => {
+        currentTimeframe = button.getAttribute('data-timeframe');
+        renderChart();
+      });
+    });
+
+    // Obsługa przełączania między wykresami
     document.getElementById('lineChartButton').addEventListener('click', () => renderChart('line'));
     document.getElementById('candlestickChartButton').addEventListener('click', () => renderChart('candlestick'));
 
